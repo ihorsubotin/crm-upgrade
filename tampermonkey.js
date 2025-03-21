@@ -7,6 +7,7 @@
 // @include      https://perevodi.keepincrm.com/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=tampermonkey.net
 // @grant        none
+// @version     0.1
 // ==/UserScript==
 
 var was_agreement_code_applied = false;
