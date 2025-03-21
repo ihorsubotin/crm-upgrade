@@ -69,7 +69,7 @@ async function applyAgreementCode(){
     const request = await makeGetRequest('https://perevodi.keepincrm.com/api/v1/agreements/21943575.json');
     const number = request.custom_fields._271;
     const field = document.querySelector('#field_6036644');
-    field.value = number + ' Г';
+    field.value = number + ' CRM';
     const inputEvent = new Event('input', { bubbles: true });
     field.dispatchEvent(inputEvent);
     const payload = {custom_fields:{
@@ -128,9 +128,31 @@ async function applyPaymentSource(){
     }
 }
 
+var was_delivery_price_set = false;
+
+function checkDeliveryPrice(){
+	const sidebar = document.querySelector('.sidebar--is-opened')
+	if(sidebar?.getAttribute('badge') == 'nova_poshta'){
+		const field = document.querySelector('input[name="cost"]');
+		if(field.value != '400' && !was_delivery_price_set){
+			console.log('Changing price')
+			was_delivery_price_set = true;
+			field.value = 400;
+		}
+  	}else{
+		was_delivery_price_set = false
+	}
+}
+
+function generalSidebarCheck(){
+	const sidebar = document.querySelector('.sidebar--is-opened')
+
+}
+
 (function() {
     //'use strict';
     setInterval(checkAgreementNum, 300);
-    setInterval(checkPaymentSource, 300);
+	setInterval(checkDeliveryPrice, 300);
+    //setInterval(checkPaymentSource, 300);
     // Your code here...
 })();
