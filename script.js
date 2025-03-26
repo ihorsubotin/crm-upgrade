@@ -137,11 +137,6 @@ function generalSidebarCheck(){
 	const sidebar = document.querySelector('.sidebar--is-opened')
 
 }
-
-(function() {
-    //'use strict';
-    setInterval(checkAgreementNum, 300);
-	setInterval(checkDeliveryPrice, 300);
-    //setInterval(checkPaymentSource, 300);
-    // Your code here...
-})();
+setInterval(checkAgreementNum, 300);
+setInterval(checkDeliveryPrice, 300);
+//setInterval(checkPaymentSource, 300);
