@@ -11,19 +11,20 @@
 
 var was_agreement_code_applied = false;
 
-function checkAgreementNum(){
-  const field = document.querySelector('#field_title');
-  if(field?.value == ''){
-    const sidebar = document.querySelector('.sidebar--is-opened')
-      if(sidebar?.getAttribute('badge') == 'agreement'){
-        if(!was_agreement_code_applied){
-            applyAgreementCode();
-            was_agreement_code_applied = true;
-        }
-      }
-  }else{
-    was_agreement_code_applied = false
-  }
+function checkAgreementNum() {
+	const sidebar = document.querySelector('.sidebar--is-opened')
+	if (sidebar?.getAttribute('badge') == 'agreement') {
+		const field = document.querySelector('#field_title');
+		if (field?.value == '') {
+			if (!was_agreement_code_applied) {
+				was_agreement_code_applied = true;
+				applyAgreementCode();
+			}
+		} 
+	} else {
+		was_agreement_code_applied = false
+	}
+
 }
 
 async function makeGetRequest(url){
@@ -82,22 +83,23 @@ async function applyAgreementCode(){
 var was_payment_sourse_applied = false;
 
 function checkPaymentSource(){
-  const field = document.querySelector('#input_40');
-  if(field?.value != ''){
-    const sidebar = document.querySelector('.sidebar--is-opened')
-      if(sidebar?.getAttribute('badge') == 'payment'){
-        if(!was_payment_sourse_applied){
-            applyPaymentSource();
-            was_payment_sourse_applied = true;
-        }
-      }
+  const sidebar = document.querySelector('.sidebar--is-opened')
+  if(sidebar?.getAttribute('badge') == 'payment'){
+	const field = document.querySelector('textarea[ng-model="$ctrl.payment.comment"]');
+	if(field?.value != ''){
+		if(!was_payment_sourse_applied){
+			was_payment_sourse_applied = true;
+			applyPaymentSource();
+		}
+	}
   }else{
     was_payment_sourse_applied = false
   }
+
 }
 
 async function applyPaymentSource(){
-    const comment = document.querySelector('#input_40').value;
+    const comment = document.querySelector('textarea[ng-model="$ctrl.payment.comment"]').value;
     let target = null;
     for(const el of document.querySelectorAll('td')){
         if(el.innerText == comment){
@@ -112,7 +114,8 @@ async function applyPaymentSource(){
     if(!account_name){
         return;
     }
-    document.querySelector('#select_32').click();
+	await new Promise(t=>setTimeout(t,200));
+    document.querySelector('md-select[name="purse_id"]').click();
     await new Promise(t=>setTimeout(t,200));
     let option_target = null;
     for(const el of document.querySelectorAll('md-option')){
@@ -124,7 +127,8 @@ async function applyPaymentSource(){
     if(option_target){
         option_target.click();
     }else{
-        document.querySelector('#select_option_60').click()
+		const all_values = document.querySelectorAll('md-option[value="93506"]');
+        document.all_values[all_values.length - 1].click();
     }
 }
 
@@ -153,6 +157,6 @@ function generalSidebarCheck(){
 	'use strict'
 	setInterval(checkAgreementNum, 300);
 	setInterval(checkDeliveryPrice, 300);
-	//setInterval(checkPaymentSource, 300);
+	setInterval(checkPaymentSource, 300);
 })();
 
