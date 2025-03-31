@@ -70,7 +70,7 @@ async function applyAgreementCode(){
     const request = await makeGetRequest('https://perevodi.keepincrm.com/api/v1/agreements/21943575.json');
     const number = request.custom_fields._271;
     const field = document.querySelector('#field_title');
-    field.value = number + ' C';
+    field.value = number + '';
     const inputEvent = new Event('input', { bubbles: true });
     field.dispatchEvent(inputEvent);
     const payload = {custom_fields:{
