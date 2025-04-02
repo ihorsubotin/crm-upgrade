@@ -30,7 +30,7 @@ function checkAgreementNum() {
 async function makeGetRequest(url){
     try {
         const xsrf = (await window.cookieStore.get('XSRF-TOKEN')).value;
-        const response = await fetch('https://perevodi.keepincrm.com/api/v1/agreements/21943575.json', {
+        const response = await fetch(url, {
             headers: {'x-xsrf-token': xsrf}
         });
         if (!response.ok) {
@@ -46,7 +46,7 @@ async function makeGetRequest(url){
 async function makePutRequest(url, body){
     try {
         const xsrf = (await window.cookieStore.get('XSRF-TOKEN')).value;
-        const response = await fetch('https://perevodi.keepincrm.com/api/v1/agreements/21943575.json', {
+        const response = await fetch(url, {
             method: "PUT",
             headers: {
                 'x-xsrf-token': xsrf,
@@ -67,17 +67,16 @@ async function makePutRequest(url, body){
 
 async function applyAgreementCode(){
     console.log('Applying code');
-    const request = await makeGetRequest('https://perevodi.keepincrm.com/api/v1/agreements/21943575.json');
-    const number = request.custom_fields._271;
+    const request = await makeGetRequest('https://perevodi.keepincrm.com/api/v1/agreements/22280074.json');
+    const number = request.comment;
     const field = document.querySelector('#field_title');
     field.value = number + '';
     const inputEvent = new Event('input', { bubbles: true });
     field.dispatchEvent(inputEvent);
-    const payload = {custom_fields:{
-        _271: +number + 1 + '',
-        minimalna_pieriedplata_291:"0.0"
-    }};
-    const putRequest = await makePutRequest('https://perevodi.keepincrm.com/api/v1/agreements/21943575.json', payload)
+    const payload = {
+        comment: +number + 1 + '',
+    };
+    const putRequest = await makePutRequest('https://perevodi.keepincrm.com/api/v1/agreements/22280074.json', payload)
 }
 
 var was_payment_sourse_applied = false;
