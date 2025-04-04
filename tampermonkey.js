@@ -149,14 +149,44 @@ function checkDeliveryPrice(){
 }
 
 function generalSidebarCheck(){
-	const sidebar = document.querySelector('.sidebar--is-opened')
-
+	const sidebar = document.querySelector('.sidebar--is-opened');
 }
+
+function getWalletBlock(title){
+	const wallets = document.querySelectorAll('.wallet-item');
+	for(const wallet of wallets){
+		if(wallet.innerText.includes(title)){
+			return wallet;
+		}	
+	}
+	return null;
+}
+
+function checkPaymentTotal(){
+	const vidcladeni = getWalletBlock('Готівка відкладена');
+	if(!vidcladeni){
+		return;
+	}
+	const kasa = getWalletBlock('Готівка у касі');
+	let block = getWalletBlock('Готівка загалом');
+	if(!block){
+		block = document.createElement('div');
+		block.innerHTML = vidcladeni.innerHTML;
+		block.classList.add('wallet-item');
+		block.querySelector('.wallet-title').innerHTML = 'Готівка загалом';
+		vidcladeni.after(block);
+	}	
+	const price1 = +kasa.querySelector('.positive-amount').innerHTML.trim().replace(',', '.').replaceAll(' ','');
+	const price2 = +vidcladeni.querySelector('.positive-amount').innerHTML.trim().replace(',', '.').replaceAll(' ','');
+	block.querySelector('.positive-amount').innerHTML = price1 + price2;
+}
+
 
 (function(){
 	'use strict'
 	setInterval(checkAgreementNum, 300);
 	setInterval(checkDeliveryPrice, 300);
 	setInterval(checkPaymentSource, 300);
+	setInterval(checkPaymentTotal, 4000);
 })();
 
