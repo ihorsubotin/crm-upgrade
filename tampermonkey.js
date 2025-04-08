@@ -137,10 +137,10 @@ function checkDeliveryPrice(){
 	const sidebar = document.querySelector('.sidebar--is-opened')
 	if(sidebar?.getAttribute('badge') == 'nova_poshta'){
 		const field = document.querySelector('input[name="cost"]');
-		if(field.value != '400' && !was_delivery_price_set){
+		if(field.value != '200' && !was_delivery_price_set){
 			console.log('Changing price')
 			was_delivery_price_set = true;
-			field.value = 400;
+			field.value = 200;
 		}
   	}else{
 		was_delivery_price_set = false
