@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         CRM automation scripts
 // @namespace    http://tampermonkey.net/
-// @version      2025-03-21
+// @version      2025-04-07
 // @description  try to take over the world!
 // @author       Ihor
 // @include      https://perevodi.keepincrm.com/*
