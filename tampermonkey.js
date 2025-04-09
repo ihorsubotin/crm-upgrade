@@ -183,7 +183,7 @@ function checkPaymentTotal(){
 
 (function(){
 	'use strict'
-	setInterval(checkAgreementNum, 300);
+	//setInterval(checkAgreementNum, 300);
 	setInterval(checkDeliveryPrice, 300);
 	setInterval(checkPaymentSource, 300);
 	setInterval(checkPaymentTotal, 4000);
