@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         CRM automation scripts
 // @namespace    http://tampermonkey.net/
-// @version      2025-04-10
+// @version      2025-04-10-1
 // @description  try to take over the world!
 // @author       Ihor
 // @include      https://perevodi.keepincrm.com/*
@@ -175,9 +175,9 @@ function checkPaymentTotal(){
 		block.querySelector('.wallet-title').innerHTML = 'Готівка загалом';
 		vidcladeni.after(block);
 	}	
-	const price1 = +kasa.querySelector('.positive-amount').innerHTML.trim().replace(',', '.').replaceAll(' ','').replace('₴', '');
-	const price2 = +vidcladeni.querySelector('.positive-amount').innerHTML.trim().replace(',', '.').replaceAll(' ','').replace('₴', '');
-	block.querySelector('.positive-amount').innerHTML = price1 + price2;
+	const price1 = +kasa.querySelector('.wallet-totals').innerText.trim().replace(',', '.').replaceAll(' ','').replace('₴', '');
+	const price2 = +vidcladeni.querySelector('.wallet-totals').innerText.trim().replace(',', '.').replaceAll(' ','').replace('₴', '');
+	block.querySelector('.wallet-totals>p').innerHTML = price1 + price2;
 }
 
 
