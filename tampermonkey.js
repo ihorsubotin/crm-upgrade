@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         CRM automation scripts
 // @namespace    http://tampermonkey.net/
-// @version      2025-04-15
+// @version      2025-04-30
 // @description  try to take over the world!
 // @author       Ihor
 // @include      https://perevodi.keepincrm.com/*
@@ -219,6 +219,7 @@ function checkPaymentTotal(){
 	block.querySelector('.wallet-totals>p').innerHTML = price1 + price2;
 }
 
+//On pause
 function setText(value){
 	const user = document.querySelector('.user-profile-name').innerText;
 	let userid = 0;
@@ -246,42 +247,81 @@ function setText(value){
 
 var checkSupply = 10; 
 
-async function checkSupplyOrder(){
+function checkSupplyOrder(){
 	const href = document.location.href;
 	const pageId = /supply_order\/(\d+)/.exec(href)?.[1];
 	if(pageId){
 		const oldItems = document.querySelector('p[on-updated="$ctrl.update(\'supply_items_306\', false)"]').innerText;
 		const total = +document.querySelector('span[editable-label="\'Total\'"]').innerText.replaceAll(' ', '').replace(',','.');
-		let otherTotal = 0;
+		let storedTotal = 0;
 		try{
-			otherTotal = JSON.parse(oldItems).reduce((sum, item) => sum + (item.amount * item.cost), 0);
+			storedTotal = JSON.parse(oldItems).reduce((sum, item) => sum + (item.amount * item.cost), 0);
 		}catch(e){}
 		let shouldSend = true;
-		if(otherTotal == total){
+		if(storedTotal == total){
 			if(checkSupply > 0){
 				checkSupply--;
 				shouldSend = false;
 			}else{
-				checkSupply = 10;
+				checkSupply = 20;
 			}
 		}
-		if(!shouldSend){
+		if(shouldSend){
+			applySupplyAmountChange(pageId);
 			return;
-		}
-		const data = await makeGetRequest(`https://perevodi.keepincrm.com/supply_orders/${pageId}.json`);
-		const newItems = data.supply_items.map(el=>{return {
-			id:el.id, 
-			amount: el.amount,
-			cost: el.cost_amount
-		}});
-		const newItemsS = JSON.stringify(newItems);
-		if(oldItems!= newItemsS){
-			await makePatchRequest(`https://perevodi.keepincrm.com/supply_orders/${pageId}.json`, 
-				{"custom_fields":{...data.custom_fields,"supply_items_306":newItemsS}});
 		}
 	}
 }
 
+async function applySupplyAmountChange(pageId){
+	let supplyOrder = await makeGetRequest(`https://perevodi.keepincrm.com/supply_orders/${pageId}.json`);
+	const totalByItems = supplyOrder.supply_items.reduce((prev, val)=>prev+(val.cost_amount*val.amount), 0);
+	const newItems = supplyOrder.supply_items.map(el=>{return {
+		id:el.id, 
+		amount: el.amount,
+		cost: el.cost_amount
+	}});
+	const newItemsS = JSON.stringify(newItems);
+	const oldItems = document.querySelector('p[on-updated="$ctrl.update(\'supply_items_306\', false)"]').innerText;
+	if( oldItems!= newItemsS ||
+		Math.abs(totalByItems - supplyOrder.total_amount) > 1
+	){
+		const totalItems = supplyOrder.supply_items.reduce((prev, val)=>prev+val.amount, 0);
+		const valueOfOne = supplyOrder.total_amount / totalItems;
+		const agreements = await makeGetRequest(`https://perevodi.keepincrm.com/api/v1/agreements.json?number=10&page=1&q[with_supply_order]=190996`); 
+		const jobs = [];
+		for(const agreement of agreements){
+			if(agreement?.id){
+				const newJobs = await makeGetRequest(`https://perevodi.keepincrm.com/api/v1/jobs.json?agreement_id=${agreement.id}`);
+				jobs.push(...newJobs);
+			}
+		}
+		for(const item of supplyOrder.supply_items){
+			const newItem = await makePatchRequest(`https://perevodi.keepincrm.com/supply_orders/${supplyOrder.id}/supply_items/${item.id}.json`, {
+				id: item.id, 
+				supply_order_id: supplyOrder.id, 
+				cost_amount: valueOfOne, 
+				cost_currency: "UAH", 
+				cost: valueOfOne
+			});
+			const job = jobs.find((job)=> job?.supply_item?.id == item.id);
+			if(job){
+				const updatedJob = await makePutRequest(`https://perevodi.keepincrm.com/api/v1/jobs/${job.id}.json`, {
+					id: job.id,
+					cost_amount: valueOfOne,
+					cost_currency: "UAH",
+					cost: valueOfOne
+				})
+			}
+		}
+		supplyOrder = await makeGetRequest(`https://perevodi.keepincrm.com/supply_orders/${pageId}.json`);
+		await makePatchRequest(`https://perevodi.keepincrm.com/supply_orders/${pageId}.json`, 
+			{"custom_fields":{...supplyOrder.custom_fields,"supply_items_306":newItemsS}});
+	}
+
+}
+
+// Deprecated
 async function checkSupplyItem(){
 	let shouldReapply = false;
 	const dataRows = document.querySelectorAll('jobs-list[jobs="$ctrl.agreement.jobs"] tbody tr');
@@ -323,6 +363,39 @@ async function checkSupplyItem(){
 	}
 }
 
+async function culateByRate(e){
+	const href = document.location.href;
+	const pageId = /supply_order\/(\d+)/.exec(href)?.[1];
+	if(pageId){
+		const supplyOrder = await makeGetRequest(`https://perevodi.keepincrm.com/supply_orders/${pageId}.json`);
+		const rate = supplyOrder?.custom_fields?.tarif_za_1800_simvoliv_310;
+		const symbols = supplyOrder?.custom_fields?.kilkist_simvoliv_311;
+		if(rate && symbols){
+			const newCost = rate * symbols / 1800;
+			const newSupply = await makePatchRequest(`https://perevodi.keepincrm.com/supply_orders/${pageId}.json`,
+				{
+					currency: "UAH", 
+					total_kopiykas: newCost * 100
+				}
+			);
+			await applySupplyAmountChange(pageId);
+		}
+	}
+}
+
+function checkButtonAdded(){
+	const button = document.querySelector("#calculate");
+	if(!button){
+		const div = document.querySelector(".field-kilkist_simvoliv_311 .resource-fields-list-body");
+		if(div){
+			const block = document.createElement('div');
+			block.innerHTML = ` <button id="calculate" class="sys-btn interaction-btn">Розрахувати ціну</button>`;
+			div.appendChild(block);
+			block.addEventListener('click', culateByRate)
+		}
+	}
+}
+
 
 (function(){
 	'use strict'
@@ -330,8 +403,9 @@ async function checkSupplyItem(){
 	setInterval(checkDeliveryPrice, 300);
 	setInterval(checkPaymentSource, 300);
 	setInterval(checkPaymentTotal, 4000);
+	setInterval(checkButtonAdded, 2000);
 	setInterval(checkSupplyOrder, 1000);
-	setInterval(checkSupplyItem, 1000);
+	//setInterval(checkSupplyItem, 1000);
 	//setInterval(sendCred, 90*1000);
 })();
 
