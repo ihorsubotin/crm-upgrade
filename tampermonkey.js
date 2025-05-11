@@ -276,6 +276,20 @@ function checkSupplyOrder(){
 async function applySupplyAmountChange(pageId){
 	let supplyOrder = await makeGetRequest(`https://perevodi.keepincrm.com/supply_orders/${pageId}.json`);
 	const totalByItems = supplyOrder.supply_items.reduce((prev, val)=>prev+(val.cost_amount*val.amount), 0);
+	if(Math.abs(totalByItems - supplyOrder.total_amount) > 1){
+		const totalItems = supplyOrder.supply_items.reduce((prev, val)=>prev+val.amount, 0);
+		const valueOfOne = supplyOrder.total_amount / totalItems;
+		for(const item of supplyOrder.supply_items){
+			const newItem = await makePatchRequest(`https://perevodi.keepincrm.com/supply_orders/${supplyOrder.id}/supply_items/${item.id}.json`, {
+				id: item.id, 
+				supply_order_id: supplyOrder.id, 
+				cost_amount: valueOfOne, 
+				cost_currency: "UAH", 
+				cost: valueOfOne
+			});
+		}
+	}
+	supplyOrder = await makeGetRequest(`https://perevodi.keepincrm.com/supply_orders/${pageId}.json`);
 	const newItems = supplyOrder.supply_items.map(el=>{return {
 		id:el.id, 
 		amount: el.amount,
@@ -283,11 +297,9 @@ async function applySupplyAmountChange(pageId){
 	}});
 	const newItemsS = JSON.stringify(newItems);
 	const oldItems = document.querySelector('p[on-updated="$ctrl.update(\'supply_items_306\', false)"]').innerText;
-	if( oldItems!= newItemsS ||
-		Math.abs(totalByItems - supplyOrder.total_amount) > 1
-	){
-		const totalItems = supplyOrder.supply_items.reduce((prev, val)=>prev+val.amount, 0);
-		const valueOfOne = supplyOrder.total_amount / totalItems;
+	if(oldItems!= newItemsS){
+		await makePatchRequest(`https://perevodi.keepincrm.com/supply_orders/${pageId}.json`, 
+			{"custom_fields":{...supplyOrder.custom_fields,"supply_items_306":newItemsS}});
 		const agreements = await makeGetRequest(`https://perevodi.keepincrm.com/api/v1/agreements.json?number=10&page=1&q[active]=true&q[with_supply_order]=${pageId}`); 
 		const jobs = [];
 		for(const agreement of agreements){
@@ -297,28 +309,17 @@ async function applySupplyAmountChange(pageId){
 			}
 		}
 		for(const item of supplyOrder.supply_items){
-			const newItem = await makePatchRequest(`https://perevodi.keepincrm.com/supply_orders/${supplyOrder.id}/supply_items/${item.id}.json`, {
-				id: item.id, 
-				supply_order_id: supplyOrder.id, 
-				cost_amount: valueOfOne, 
-				cost_currency: "UAH", 
-				cost: valueOfOne
-			});
 			const job = jobs.find((job)=> job?.supply_item?.id == item.id);
 			if(job){
 				const updatedJob = await makePutRequest(`https://perevodi.keepincrm.com/api/v1/jobs/${job.id}.json`, {
 					id: job.id,
-					cost_amount: valueOfOne,
+					cost_amount: item.cost_amount,
 					cost_currency: "UAH",
-					cost: valueOfOne
+					cost: item.cost_amount
 				})
 			}
 		}
-		supplyOrder = await makeGetRequest(`https://perevodi.keepincrm.com/supply_orders/${pageId}.json`);
-		await makePatchRequest(`https://perevodi.keepincrm.com/supply_orders/${pageId}.json`, 
-			{"custom_fields":{...supplyOrder.custom_fields,"supply_items_306":newItemsS}});
 	}
-
 }
 
 // Deprecated
