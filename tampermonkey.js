@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         CRM automation scripts
 // @namespace    http://tampermonkey.net/
-// @version      2025-05-1
+// @version      2025-05-29
 // @description  try to take over the world!
 // @author       Ihor
 // @include      https://perevodi.keepincrm.com/*
@@ -372,7 +372,7 @@ async function culateByRate(e){
 		const rate = supplyOrder?.custom_fields?.tarif_za_1800_simvoliv_310;
 		const symbols = supplyOrder?.custom_fields?.kilkist_simvoliv_311;
 		if(rate && symbols){
-			const newCost = rate * symbols / 1800;
+			const newCost = Math.round(rate * symbols / 1800);
 			const newSupply = await makePatchRequest(`https://perevodi.keepincrm.com/supply_orders/${pageId}.json`,
 				{
 					currency: "UAH", 
@@ -393,6 +393,43 @@ function checkButtonAdded(){
 			block.innerHTML = ` <button id="calculate" class="sys-btn interaction-btn">Розрахувати ціну</button>`;
 			div.appendChild(block);
 			block.addEventListener('click', culateByRate)
+		}
+	}
+}
+
+was_price_type_checked = false;
+//Unused
+function checkLeadPrice() {
+	const href = document.location.href;
+	const pageId = /clients\/(\d+)/.exec(href)?.[1];
+	if(pageId){
+		const isLead = document.querySelector('a[ng-show="$ctrl.client.lead"]');
+		if(isLead.getAttribute('ui-sref') == 'app.clients') return;
+		if (!was_price_type_checked) {
+			was_price_type_checked = true;
+			applyPriceType(pageId);
+		}
+	}else{
+		was_price_type_checked = false;
+	}
+}
+
+async function applyPriceType(pageId){
+	const lead = await makeGetRequest(`https://perevodi.keepincrm.com/api/v1/clients/${pageId}.json`);
+	if(lead){
+		const setPrice = false;
+		switch(lead.source.name){
+			case '':
+			case '':
+			case '':
+			case '':
+			setPrice = true;
+			break;
+		}
+		if(setPrice){
+			await makePatchRequest(`https://perevodi.keepincrm.com/api/v1/clients/${pageId}.json`, {
+				price_type_id: 9130
+			});
 		}
 	}
 }
