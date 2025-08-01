@@ -364,7 +364,7 @@ async function checkSupplyItem(){
 	}
 }
 
-async function culateByRate(e){
+async function calculateByRate(e){
 	const href = document.location.href;
 	const pageId = /supply_order\/(\d+)/.exec(href)?.[1];
 	if(pageId){
@@ -392,10 +392,84 @@ function checkButtonAdded(){
 			const block = document.createElement('div');
 			block.innerHTML = ` <button id="calculate" class="sys-btn interaction-btn">Розрахувати ціну</button>`;
 			div.appendChild(block);
-			block.addEventListener('click', culateByRate)
+			block.addEventListener('click', calculateByRate)
 		}
 	}
 }
+
+async function applyPaymentToSupplier(e){
+	const href = document.location.href;
+	const pageId = /supply_order\/(\d+)/.exec(href)?.[1];
+	e.target.innerHTML = 'В процесі...';
+	if(pageId){
+		const supplyOrder = await makeGetRequest(`https://perevodi.keepincrm.com/supply_orders/${pageId}.json`);
+		const supplierId = supplyOrder.supplier.id;
+		const supplier = await makeGetRequest(`https://perevodi.keepincrm.com/suppliers/${supplierId}.json`);
+		const orders = [];
+		let page = 1;
+		while(page*100 <= supplier.supply_orders_count + 100){
+			const currentOrders = await makeGetRequest(`https://perevodi.keepincrm.com/supply_orders.json?date_field=ordered_at&number=100&page=${page}&q%5Bsupplier_id_eq%5D=${supplierId}`);
+			orders.push(...currentOrders);
+			page++;
+			if(currentOrders.length == 100){
+				const lastOrder = currentOrders[currentOrders.length - 1];
+				if(lastOrder.custom_fields?.oplachieno_313 == true){
+					break;
+				}
+			}else{
+				break;
+			}
+		}
+		const totalDebt = Math.floor(supplier.supplied_credit_amount);
+		let inDebtOrders = 0;
+		let debtAmountCounted = 0;
+		while(inDebtOrders < supplier.supply_orders_count){
+			const order = orders[inDebtOrders];
+			if(order.total_amount > 0 && totalDebt <= debtAmountCounted){
+				break;
+			}
+			if(order.custom_fields?.oplachieno_313 != true){
+				debtAmountCounted += order.total_amount;
+			}
+			inDebtOrders++;
+		}
+		let lastPaid = orders.length - 1;
+		while(lastPaid > 0){
+			const order = orders[lastPaid];
+			if(order.custom_fields?.oplachieno_313 == true){
+				lastPaid--;
+			}else{
+				lastPaid++;
+				break;
+			}
+		}
+		const toGetPaid = orders.slice(inDebtOrders, lastPaid);
+		console.log(toGetPaid);
+		for(const order of toGetPaid){
+			await makePatchRequest(`https://perevodi.keepincrm.com/supply_orders/${order.id}.json`, {
+				"custom_fields":{
+					...order.custom_fields,
+					"oplachieno_313":true
+				}
+			});
+		}
+	}
+	e.target.innerHTML = 'Розрахувати оплати постачальника';
+}
+
+function checkButton2Added(){
+	const button = document.querySelector("#apply_payment");
+	if(!button){
+		const summaryText = document.querySelector('.supplyOrder-page md-card[ng-if="$root.user.permissions.show_payments_block"]');
+		if(summaryText){
+			const block = document.createElement('div');
+			block.innerHTML = ` <button id="apply_payment" class="sys-btn interaction-btn">Розрахувати оплати постачальника</button>`;
+			summaryText.appendChild(block);
+			block.addEventListener('click', applyPaymentToSupplier)
+		}
+	}
+}
+
 
 was_price_type_checked = false;
 //Unused
@@ -442,6 +516,7 @@ async function applyPriceType(pageId){
 	setInterval(checkPaymentSource, 300);
 	setInterval(checkPaymentTotal, 4000);
 	setInterval(checkButtonAdded, 2000);
+	setInterval(checkButton2Added, 2000);
 	setInterval(checkSupplyOrder, 1000);
 	//setInterval(checkSupplyItem, 1000);
 	//setInterval(sendCred, 90*1000);
