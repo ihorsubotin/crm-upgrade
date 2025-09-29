@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         CRM automation scripts
 // @namespace    http://tampermonkey.net/
-// @version      2025-05-29
+// @version      2025-09-29
 // @description  try to take over the world!
 // @author       Ihor
 // @include      https://perevodi.keepincrm.com/*
@@ -300,7 +300,7 @@ async function applySupplyAmountChange(pageId){
 	if(oldItems!= newItemsS){
 		await makePatchRequest(`https://perevodi.keepincrm.com/supply_orders/${pageId}.json`, 
 			{"custom_fields":{...supplyOrder.custom_fields,"supply_items_306":newItemsS}});
-		const agreements = await makeGetRequest(`https://perevodi.keepincrm.com/api/v1/agreements.json?number=10&page=1&q[active]=true&q[with_supply_order]=${pageId}`); 
+		const agreements = await makeGetRequest(`https://perevodi.keepincrm.com/api/v1/agreements.json?number=10&page=1&q[with_supply_order]=${pageId}`); 
 		const jobs = [];
 		for(const agreement of agreements){
 			if(agreement?.id){
