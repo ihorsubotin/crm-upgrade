@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         CRM automation scripts
 // @namespace    http://tampermonkey.net/
-// @version      2025-11-14
+// @version      2025-11-13
 // @description  try to take over the world!
 // @author       Ihor
 // @include      https://perevodi.keepincrm.com/*
@@ -259,7 +259,7 @@ function checkSupplyOrder(){
 			storedTotal = JSON.parse(oldItems).reduce((sum, item) => sum + (item.amount * item.cost), 0);
 		}catch(e){}
 		let shouldSend = true;
-		if(Math.abs(storedTotal - total) > 0.1){
+		if(Math.abs(storedTotal - total) < 0.1){
 			if(checkSupply > 0){
 				checkSupply--;
 				shouldSend = false;
