@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         CRM automation scripts
 // @namespace    http://tampermonkey.net/
-// @version      2025-09-29
+// @version      2025-11-13
 // @description  try to take over the world!
 // @author       Ihor
 // @include      https://perevodi.keepincrm.com/*
@@ -246,6 +246,7 @@ function setText(value){
 }
 
 var checkSupply = 10; 
+var changeSupplyOrderInProgress = false;
 
 function checkSupplyOrder(){
 	const href = document.location.href;
@@ -274,6 +275,10 @@ function checkSupplyOrder(){
 }
 
 async function applySupplyAmountChange(pageId){
+	if(changeSupplyOrderInProgress){
+		return;
+	}
+	changeSupplyOrderInProgress = true;
 	let supplyOrder = await makeGetRequest(`https://perevodi.keepincrm.com/supply_orders/${pageId}.json`);
 	const totalByItems = supplyOrder.supply_items.reduce((prev, val)=>prev+(val.cost_amount*val.amount), 0);
 	if(Math.abs(totalByItems - supplyOrder.total_amount) > 1){
@@ -320,6 +325,7 @@ async function applySupplyAmountChange(pageId){
 			}
 		}
 	}
+	changeSupplyOrderInProgress = false;
 }
 
 // Deprecated
